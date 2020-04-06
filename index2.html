@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>学校填报</title>
+  <style type="text/css">
+
+    .grid {
+      background: #FCFCFC;
+      margin: auto;
+      width: 1140px;
+      height: 650px;
+      text-align: center;
+    }
+    .grid table {
+      border-top: 1px solid #C2D89A;
+      width: 100%;
+      border-collapse: collapse;
+    }
+    .grid th,td {
+      padding: 10px;
+      border: 1px dashed #F3DCAB;
+      height: 35px;
+      line-height: 35px;
+    }
+    .grid th {
+      background-color: #EEF1F6;
+    }
+    .grid .announcement {
+      padding-bottom: 10px;
+      padding-top: 5px;
+      border-radius: 5px;
+      border: solid 1px #5A9C41;
+    }
+    .grid .total {
+      height: 30px;
+      line-height: 30px;
+      border-top: 1px solid #C2D89A;
+    }
+    .button-group{
+      padding: 5px;
+      magin: 10px;
+      text-align: right;
+    }
+    .btn-download{
+      height: 34px;
+      /*font-size: 20px;*/
+      border-radius: 8px;
+      color: white;
+      background: #5A9C41;
+    }
+    .hide{
+      display: none;
+    }
+    select {
+      height: 30px;
+      width: 90%;
+      margin: 0;
+      color: darkgrey;
+      border: solid 1px lightgrey;
+      border-radius: 5px;
+    }
+    option {
+      text-align: center;
+    }
+    .line-text {
+      margin: 10px;
+      width: 100%;
+      text-align: left;
+      margin-left: 0.89em;
+    }
+    .input-50 {
+      height: 26px;
+      width: 40%;
+      border: solid 1px lightgrey;
+      border-radius: 5px;
+    }
+    .line-text span {margin: 12px;}
+    .input-25 {
+      height: 26px;
+      width: 18%;
+      border: solid 1px lightgrey;
+      border-radius: 5px;
+    }
+    .lb-btn {
+      margin: 5px;padding: 0px 5px;
+    }
+    .active {
+      color: white;
+      background: #5A9C41;
+    }
+    .lb-btn:hover{
+      background: #FFFFAF;
+      color: black;
+      cursor: pointer;
+    }
+    /*css3, IE8及以下不兼容*/
+    table th:nth-child(1) {
+      display: none;
+    }
+    table td:nth-child(1) {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="grid">
+      <div>
+        <h1>学校填报</h1>
+        <div class="announcement">
+          <div>
+            <label>学校名称：</label>
+            <select v-model="selectItem" @change="selectFn($event)">
+              <option>请选择</option>
+              <option  v-for='(item,index) in edus'>{{item}}</option>
+            </select>
+          </div>
+          <div class="line-text">
+            <label for="title">填报主题：</label>
+            <input v-model="titleItem" name="titleItem" class="input-50" type="text" id="title">
+          </div>
+          <div class="line-text">
+            <label>填报日期：</label>
+            <input v-model="dateStart" class="input-25" type="date"   @change="dateStart1">
+            <span>-</span>
+            <input v-model="dateEnd"  class="input-25" type="date"    @change="dateEnd1">
+          </div>
+          <div class="line-text">
+            <label>状态：</label>
+            <label class="lb-btn" :class='stateIndex==index?"active":""' v-on:click='changeState(item,index,$event)' v-for='(item,index) in states'>{{item.name}}</label>
+          </div>
+          <div class="line-text">
+            <label>附件：</label>
+            <label class="lb-btn" :class='accessoryIndex==index?"active":""' v-on:click='changeAccessory(item,index,$event)' v-for='(item,index) in accessorys'>{{item.name}}</label>
+          </div>
+        </div>
+      </div>
+      <div class="button-group">
+        <button class="btn-download">下载</button>
+        <button class="btn-download">资料下载</button>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th v-for='(item,index) in tableTitles'>{{item}}</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr :key='v.id' v-for='(v,k,i) in announcements'>
+            <td>{{v.id}}</td>
+            <td>{{v.name}}</td>
+            <td>{{v.title}}</td>
+            <td>{{v.state}}</td>
+            <td>{{v.date | format('yyyy-MM-dd hh:mm:ss')}}</td>
+            <td>{{v.edit}}</td>
+            <td>
+              <a href="" @click.prevent=''>附件({{v.files.length}})</a>
+              <span>|</span>
+              <a href="" @click.prevent=''>详情</a>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <script type="text/javascript" src="js/vue.js"></script>
+  <script type="text/javascript">
+    var tableTitles =["编号", "学校名称", "填报主题", "状态", "填报日期", "填报人", "操作"]
+    var states = [{id:0,name:'全部'},{id:1,name:'教委办审核中'},{id:2,name:'填报中'},{id:3,name:'学校审核中'},{id:4,name:'科室审核中'},{id:5,name:'审核完成'},{id:6,name:'归档中'},{id:7,name:'草稿'}];
+    var accessorys = [{id:0,name:'全部'},{id:1,name:'已上传'},{id:2,name:'未上传'}];
+    var data = [
+                  {
+                      id: 1,
+                      name: '东石教委办',
+                      title: '2019年度《法制日报》《福建法制日报》',
+                      state: '填报中',
+                      date: new Date(Date.parse("6/13/2019")),
+                      edit: '东石教委办',
+                      files:[]
+                  }
+                  ,{
+                    id: 2,
+                    name: '安海教委办',
+                    title: '2020年度《法制日报》《福建法制日报》',
+                    state: '草稿',
+                    date: new Date(Date.parse("6/13/2020")),
+                    edit: '安海教委办',
+                    files:['','']
+                  }
+                  ,{
+                    id: 3,
+                    name: '内坑教委办',
+                    title: '2018年度《法制日报》《福建法制日报》',
+                    state: '审核完成',
+                    date:  new Date(Date.parse("6/13/2018")),
+                    edit: '内坑教委办',
+                    files:['','','']
+                  }
+              ];
+    Vue.directive('focus', {
+      inserted: function (el) {
+        el.focus();
+      }
+    });
+    Vue.filter('format', function(value, arg) {
+      function dateFormat(date, format) {
+        if (typeof date === "string") {
+          var mts = date.match(/(\/Date\((\d+)\)\/)/);
+          if (mts && mts.length >= 3) {
+            date = parseInt(mts[2]);
+          }
+        }
+        date = new Date(date);
+        if (!date || date.toUTCString() == "Invalid Date") {
+          return "";
+        }
+        var map = {
+          "M": date.getMonth() + 1, //月份 
+          "d": date.getDate(), //日 
+          "h": date.getHours(), //小时 
+          "m": date.getMinutes(), //分 
+          "s": date.getSeconds(), //秒 
+          "q": Math.floor((date.getMonth() + 3) / 3), //季度 
+          "S": date.getMilliseconds() //毫秒 
+        };
+        format = format.replace(/([yMdhmsqS])+/g, function(all, t) {
+          var v = map[t];
+          if (v !== undefined) {
+            if (all.length > 1) {
+              v = '0' + v;
+              v = v.substr(v.length - 2);
+            }
+            return v;
+          } else if (t === 'y') {
+            return (date.getFullYear() + '').substr(4 - all.length);
+          }
+          return all;
+        });
+        return format;
+      }
+      return dateFormat(value, arg);
+    })
+    var vm = new Vue({
+      el: '#app',
+      data: {
+        flag: false,
+        submitFlag: false,
+        id: '',
+        name: '',
+        edus:[
+             '东石教委办'
+            ,'内坑教委办'
+            ,'安海教委办'
+        ],
+        selectItem: '请选择',//学校名称
+        titleItem:'',//主题
+        dateStart:'',//开始时间
+        dateEnd:'', //结束时间
+        stateItem:'全部',//状态
+        fileItem:'全部',//附件
+        stateIndex: 0,
+        accessoryIndex: 0,
+        tableTitles: tableTitles,
+        announcements: [],
+        states: states,
+        accessorys: accessorys,
+        edit: '张三'
+      },
+      methods: {
+        /**
+         * @description 根据填报状态加载表格数据
+         * @param v : 遍历数组中的一个元素
+         * @param index : 遍历数组中的一个元素的下标
+         */
+        changeState: function(v,index,event){
+            // 在这里实现选项卡切换操作：本质就是操作类名
+            // 如何操作类名？就是通过currentIndex
+             this.stateIndex = index;
+             this.stateItem = event.target.innerHTML;
+             this.announcements =  showDataWithAllCondition(this);
+        },
+
+         /**
+          * @description 附件的上传与否
+          * @param v : 遍历数组中的一个元素
+          * @param index : 遍历数组中的一个元素的下标
+          */
+        changeAccessory: function(v,index,event){
+            // 在这里实现选项卡切换操作：本质就是操作类名
+            // 如何操作类名？就是通过currentIndex
+            this.accessoryIndex = index;
+            this.fileItem = event.target.innerHTML;
+            this.announcements =  showDataWithAllCondition(this);
+        },
+
+        /**
+         * 选择学校名称
+         */
+        selectFn:function(event){
+            this.announcements =  showDataWithAllCondition(this);
+        },
+
+        /**
+         * @description 设置开始时间
+         * @param event
+         */
+        dateStart1:function(event){
+            this.announcements =  showDataWithAllCondition(this);
+        },
+
+          /**
+           * @description 设置结束时间
+           * @param event
+           */
+          dateEnd1:function(event){
+             this.announcements =  showDataWithAllCondition(this);
+          },
+
+
+      },
+      watch: {
+          /**
+           * @description 监听主题, 内容的改变同时改变表格内容
+           * @param val
+           */
+          titleItem: function(val) {
+             this.announcements =  showDataWithAllCondition(this);
+          },
+      },
+      mounted: function(){
+        // 该生命周期钩子函数被触发的时候，模板已经可以使用
+        // 一般此时用于获取后台数据，然后把数据填充到模板
+        //编号  id,学校名称 name,填报主题 title,状态state,填报日期date,填报人infomant,
+        this.announcements = data;
+      }
+    });
+
+
+    /**
+     * @description 把表格数据根据条件进行筛选,返回过滤之后的表格行记录对象
+     * @param el: 这是当前的 vm对象
+     * @return 返回过滤之后的表格行记录对象
+     */
+    function showDataWithAllCondition(el){
+        var selectItem= el.selectItem;//学校名称
+        var titleItem = el.titleItem;//主题
+        var dateStart =  el.dateStart;//开始时间
+        var dateEnd   =  el.dateEnd; //结束时间
+        var stateItem = el.stateItem ;//状态
+        var fileItem  = el.fileItem  ;//附件
+
+       return data.filter(function(item){
+              return (( !titleItem ? item : item.title.indexOf(titleItem) > -1) //填报主题
+                      && (selectItem =='请选择' ? item : item.name == selectItem) //学校名称
+                      && ((!stateItem || stateItem=='全部') ? item :item.state==stateItem )//状态
+                      && ((!fileItem || fileItem=='全部') ? item : ((fileItem == '已上传') ?  item.files.length>0 : item.files.length == 0 )) //附件
+                      && (!dateStart ? item : (new Date(item.date) >=new Date(dateStart) )) //开始时间
+                      && (!dateEnd ? item : (new Date(item.date) <= new Date(dateEnd)))); //结束时间
+            });
+    }
+
+  </script>
+</body>
+</html>
